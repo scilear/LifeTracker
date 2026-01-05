@@ -18,6 +18,7 @@ from .crud import (
 from .models import Habit
 from .schemas import DueItem, HabitCreate, HabitOut, HabitUpdate, RecordCreate, RecordOut
 from .services.due import compute_due
+from .main import get_db
 
 router = APIRouter(prefix="/api")
 
@@ -38,18 +39,18 @@ def _habit_to_out(h: Habit) -> HabitOut:
 
 
 @router.get("/habits", response_model=list[HabitOut])
-def api_list_habits(db: Session = Depends()):
+def api_list_habits(db: Session = Depends(get_db)):
     return [_habit_to_out(h) for h in list_habits(db)]
 
 
 @router.post("/habits", response_model=HabitOut, status_code=201)
-def api_create_habit(payload: HabitCreate, db: Session = Depends()):
+def api_create_habit(payload: HabitCreate, db: Session = Depends(get_db)):
     habit = create_habit(db, payload)
     return _habit_to_out(habit)
 
 
 @router.get("/habits/{habit_id}", response_model=HabitOut)
-def api_get_habit(habit_id: int, db: Session = Depends()):
+def api_get_habit(habit_id: int, db: Session = Depends(get_db)):
     habit = get_habit(db, habit_id)
     if habit is None:
         raise HTTPException(status_code=404, detail="Habit not found")
@@ -57,7 +58,7 @@ def api_get_habit(habit_id: int, db: Session = Depends()):
 
 
 @router.patch("/habits/{habit_id}", response_model=HabitOut)
-def api_update_habit(habit_id: int, payload: HabitUpdate, db: Session = Depends()):
+def api_update_habit(habit_id: int, payload: HabitUpdate, db: Session = Depends(get_db)):
     habit = get_habit(db, habit_id)
     if habit is None:
         raise HTTPException(status_code=404, detail="Habit not found")
@@ -66,7 +67,7 @@ def api_update_habit(habit_id: int, payload: HabitUpdate, db: Session = Depends(
 
 
 @router.delete("/habits/{habit_id}", status_code=204)
-def api_delete_habit(habit_id: int, db: Session = Depends()):
+def api_delete_habit(habit_id: int, db: Session = Depends(get_db)):
     habit = get_habit(db, habit_id)
     if habit is None:
         raise HTTPException(status_code=404, detail="Habit not found")
@@ -74,7 +75,7 @@ def api_delete_habit(habit_id: int, db: Session = Depends()):
 
 
 @router.get("/habits/{habit_id}/records", response_model=list[RecordOut])
-def api_list_records(habit_id: int, db: Session = Depends()):
+def api_list_records(habit_id: int, db: Session = Depends(get_db)):
     habit = get_habit(db, habit_id)
     if habit is None:
         raise HTTPException(status_code=404, detail="Habit not found")
@@ -95,7 +96,7 @@ def api_list_records(habit_id: int, db: Session = Depends()):
 
 
 @router.post("/habits/{habit_id}/records", response_model=RecordOut, status_code=201)
-def api_upsert_record(habit_id: int, payload: RecordCreate, db: Session = Depends()):
+def api_upsert_record(habit_id: int, payload: RecordCreate, db: Session = Depends(get_db)):
     habit = get_habit(db, habit_id)
     if habit is None:
         raise HTTPException(status_code=404, detail="Habit not found")
@@ -115,7 +116,7 @@ def api_upsert_record(habit_id: int, payload: RecordCreate, db: Session = Depend
 @router.get("/due", response_model=list[DueItem])
 def api_due(
     window_minutes: int = Query(default=60, ge=1, le=60 * 24 * 7),
-    db: Session = Depends(),
+    db: Session = Depends(get_db),
 ):
     now = datetime.now(timezone.utc)
     due = compute_due(db, now=now, window_minutes=window_minutes)

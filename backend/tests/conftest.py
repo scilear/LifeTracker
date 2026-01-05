@@ -1,12 +1,10 @@
 from __future__ import annotations
 
-from datetime import datetime, timezone
-
 import pytest
 from fastapi.testclient import TestClient
 
-from app.main import SessionDependency, create_app
 from app.db import create_sessionmaker, create_sqlite_engine
+from app.main import create_app, get_db
 from app.models import Base
 
 
@@ -25,7 +23,7 @@ def client():
         finally:
             db.close()
 
-    app.dependency_overrides[SessionDependency] = _get_session
+    app.dependency_overrides[get_db] = _get_session
 
     with TestClient(app) as c:
         yield c
